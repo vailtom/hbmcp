@@ -33,7 +33,7 @@ STATIC s_lDeletedDefault   := .T.
 
 
 FUNCTION dbf_LoadConfig()
-   LOCAL hIni, hGen, hRoots, cEnvCfg, cEnvRoot, cBase
+   LOCAL hIni, hGen, hRoots, cEnvCfg, cEnvRoot, cBase, cKeyNorm, cKey
 
    cEnvCfg := GetEnv( "DBF_MCP_CONFIG" )
    IF ! Empty( cEnvCfg )
@@ -76,7 +76,12 @@ FUNCTION dbf_LoadConfig()
       s_hRoots := { "default" => s_cActiveRoot }
    ELSE
       s_hRoots := { => }
-      hb_HEval( hRoots, {| k, v | s_hRoots[ AllTrim( k ) ] := dbf_NormalizePath( AllTrim( v ), cBase ) } )
+      FOR EACH cKey IN hb_HKeys( hRoots )
+         cKeyNorm := Lower( AllTrim( hb_CStr( cKey ) ) )
+         IF ! Empty( cKeyNorm )
+            s_hRoots[ cKeyNorm ] := dbf_NormalizePath( AllTrim( hb_CStr( hRoots[ cKey ] ) ), cBase )
+         ENDIF
+      NEXT
    ENDIF
 
    cEnvRoot := GetEnv( "DBF_ROOT" )
@@ -112,10 +117,10 @@ FUNCTION dbf_ActiveRoot()
 
 
 FUNCTION dbf_SetActiveRoot( cValue )
-   LOCAL cResolved
+   LOCAL cResolved, cKey := Lower( AllTrim( hb_CStr( cValue ) ) )
 
-   IF hb_HHasKey( s_hRoots, cValue )
-      cResolved := s_hRoots[ cValue ]
+   IF hb_HHasKey( s_hRoots, cKey )
+      cResolved := s_hRoots[ cKey ]
    ELSE
       cResolved := dbf_NormalizePath( cValue, dbf_DirOf( s_cConfigPath ) )
    ENDIF
