@@ -1,0 +1,15 @@
+#
+# dbf_mcp - DBF/NTX MCP server
+#
+-incpath=../../include
+-L../../
+-lhbmcp
+-mt
+-gtcgi
+-o${hb_name}
+
+dbf_mcp.prg
+dbf_workspace.prg
+dbf_filters.prg
+dbf_config.prg
+

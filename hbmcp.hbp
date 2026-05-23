@@ -1,0 +1,14 @@
+#
+# hbmcp - Harbour MCP server library
+# Build:  hbmk2 hbmcp.hbp
+#
+
+-hblib
+-mt
+-o${hb_name}
+-incpath=include
+
+src/mcp_jsonrpc.prg
+src/mcp_registry.prg
+src/mcp_protocol.prg
+src/mcp_server.prg

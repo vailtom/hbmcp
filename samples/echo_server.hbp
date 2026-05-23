@@ -1,0 +1,11 @@
+#
+# Sample MCP server build
+#
+-incpath=../include
+-L../
+-lhbmcp
+-mt
+-gtcgi
+-o${hb_name}
+
+echo_server.prg

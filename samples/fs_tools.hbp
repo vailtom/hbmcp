@@ -1,0 +1,11 @@
+#
+# fs_tools - filesystem MCP sample
+#
+-incpath=../include
+-L../
+-lhbmcp
+-mt
+-gtcgi
+-o${hb_name}
+
+fs_tools.prg

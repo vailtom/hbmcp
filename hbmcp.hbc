@@ -1,0 +1,8 @@
+#
+# hbmcp - Harbour Component file (for use by client apps)
+# Usage in client .hbp:  hbmcp.hbc
+#
+
+libs=hbmcp
+incpath=%{hb_dirname}include
+libpaths=%{hb_dirname}lib/${hb_plat}/${hb_comp}

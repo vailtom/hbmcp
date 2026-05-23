@@ -1,0 +1,11 @@
+#
+# error_demo - runtime-error trap demonstration
+#
+-incpath=../include
+-L../
+-lhbmcp
+-mt
+-gtcgi
+-o${hb_name}
+
+error_demo.prg

@@ -1,0 +1,29 @@
+# Build outputs
+*.exe
+*.lib
+*.a
+*.obj
+*.o
+*.dll
+*.exp
+*.ilk
+*.pdb
+*.tds
+*.map
+
+# Harbour intermediates
+*.ppo
+*.hrb
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local assistant instructions
+AGENTS.md
+CLAUDE.md
+plans/
+**/__history/
