@@ -156,6 +156,9 @@ PROCEDURE dbf_WorkerLoop()
    RETURN
 
 
+/*
+ * dbf_ErrorMsg - Convert a caught error object/value to displayable text.
+ */
 STATIC FUNCTION dbf_ErrorMsg( oErr )
    IF HB_ISOBJECT( oErr )
       RETURN hb_CStr( oErr:description )
@@ -245,6 +248,9 @@ STATIC FUNCTION resolve_dbf( cReference )
    RETURN aMatches[ 1 ]
 
 
+/*
+ * rel_to_root - Convert absolute path to root-relative path when possible.
+ */
 STATIC FUNCTION rel_to_root( cAbsPath )
    LOCAL cRoot := dbf_ActiveRoot()
    IF Left( Lower( cAbsPath ), Len( cRoot ) ) == Lower( cRoot )
@@ -253,6 +259,9 @@ STATIC FUNCTION rel_to_root( cAbsPath )
    RETURN cAbsPath
 
 
+/*
+ * discover_indexes - List same-stem NTX files near a DBF path.
+ */
 STATIC FUNCTION discover_indexes( cDbfPath )
    /* Conservative: only return NTX files whose stem matches the DBF stem.
       Same trade-off the Python build settled on after timeouts on shared
@@ -271,6 +280,9 @@ STATIC FUNCTION discover_indexes( cDbfPath )
    RETURN aOut
 
 
+/*
+ * dbf_DirOf - Return directory component from a full filesystem path.
+ */
 STATIC FUNCTION dbf_DirOf( cPath )
    LOCAL cDir := ""
    hb_FNameSplit( cPath, @cDir )
@@ -300,6 +312,9 @@ STATIC FUNCTION dbf_IsAbsPath( cPath )
    RETURN .F.
 
 
+/*
+ * dbf_Raise - Raise a Harbour Error object with a custom description.
+ */
 STATIC PROCEDURE dbf_Raise( cMsg )
    LOCAL oErr := ErrorNew()
    oErr:description := cMsg
@@ -335,6 +350,9 @@ STATIC FUNCTION make_alias( cDbfPath )
    RETURN cAlias
 
 
+/*
+ * open_session - Open DBF/NTX into a dedicated alias and return session state.
+ */
 STATIC FUNCTION open_session( cDbfPath, aNtxPaths )
    LOCAL cAlias := make_alias( cDbfPath )
    LOCAL cNtx, aMeta, n, hSession
@@ -365,6 +383,9 @@ STATIC FUNCTION open_session( cDbfPath, aNtxPaths )
    RETURN hSession
 
 
+/*
+ * close_session - Close one open alias referenced by a session hash.
+ */
 STATIC PROCEDURE close_session( hSession )
    LOCAL cAlias := hSession[ "alias" ]
    IF Select( cAlias ) != 0
@@ -373,6 +394,9 @@ STATIC PROCEDURE close_session( hSession )
    RETURN
 
 
+/*
+ * close_all_sessions - Close every opened alias and reset worker session state.
+ */
 STATIC PROCEDURE close_all_sessions()
    LOCAL cKey
    FOR EACH cKey IN hb_HKeys( s_hSessions )
@@ -383,6 +407,9 @@ STATIC PROCEDURE close_all_sessions()
    RETURN
 
 
+/*
+ * active_session - Return current active session or raise if none is active.
+ */
 STATIC FUNCTION active_session()
    IF s_cActiveRef == NIL .OR. ! hb_HHasKey( s_hSessions, s_cActiveRef )
       dbf_Raise( "No active table. Call open_table first." )
@@ -390,6 +417,9 @@ STATIC FUNCTION active_session()
    RETURN s_hSessions[ s_cActiveRef ]
 
 
+/*
+ * session_for - Resolve table arg to a session, opening it lazily when needed.
+ */
 STATIC FUNCTION session_for( cTableArg )
    LOCAL cPath, hSession
 
@@ -405,6 +435,9 @@ STATIC FUNCTION session_for( cTableArg )
    RETURN hSession
 
 
+/*
+ * session_summary - Build a compact runtime snapshot of session/cursor state.
+ */
 STATIC FUNCTION session_summary( hSession )
    LOCAL cAlias := hSession[ "alias" ]
    RETURN { ;
@@ -457,6 +490,9 @@ STATIC FUNCTION op_list_roots( hArgs )
       "roots"       => dbf_Roots() }
 
 
+/*
+ * op_get_active_root - Worker op: return current root and config path.
+ */
 STATIC FUNCTION op_get_active_root( hArgs )
    HB_SYMBOL_UNUSED( hArgs )
    RETURN { ;
@@ -464,6 +500,9 @@ STATIC FUNCTION op_get_active_root( hArgs )
       "config_path" => dbf_ConfigPath() }
 
 
+/*
+ * op_set_active_root - Worker op: switch root and reset all open sessions.
+ */
 STATIC FUNCTION op_set_active_root( hArgs )
    LOCAL cValue := hb_HGetDef( hArgs, "root", "" )
    close_all_sessions()
@@ -473,6 +512,9 @@ STATIC FUNCTION op_set_active_root( hArgs )
       "config_path" => dbf_ConfigPath() }
 
 
+/*
+ * op_save_config - Worker op: persist in-memory config back to INI file.
+ */
 STATIC FUNCTION op_save_config( hArgs )
    LOCAL cPath
    HB_SYMBOL_UNUSED( hArgs )
@@ -480,6 +522,9 @@ STATIC FUNCTION op_save_config( hArgs )
    RETURN { "saved" => .T., "config_path" => cPath }
 
 
+/*
+ * op_list_tables - Worker op: list DBF files under active root.
+ */
 STATIC FUNCTION op_list_tables( hArgs )
    LOCAL lRec := hb_HGetDef( hArgs, "recursive", .F. )
    LOCAL cRoot := dbf_ActiveRoot()
@@ -497,6 +542,9 @@ STATIC FUNCTION op_list_tables( hArgs )
    RETURN aOut
 
 
+/*
+ * op_list_all_indexes - Worker op: list NTX files under active root.
+ */
 STATIC FUNCTION op_list_all_indexes( hArgs )
    LOCAL lRec := hb_HGetDef( hArgs, "recursive", .F. )
    LOCAL cRoot := dbf_ActiveRoot()
@@ -514,6 +562,9 @@ STATIC FUNCTION op_list_all_indexes( hArgs )
    RETURN aOut
 
 
+/*
+ * op_get_table_info - Worker op: return DBF structure plus discovered indexes.
+ */
 STATIC FUNCTION op_get_table_info( hArgs )
    LOCAL cPath := resolve_dbf( hb_HGetDef( hArgs, "table", "" ) )
    LOCAL cAlias := "TMPINFO"
@@ -554,11 +605,17 @@ STATIC FUNCTION op_get_table_info( hArgs )
       "indexes"       => aIxOut }
 
 
+/*
+ * op_list_fields - Worker op: convenience wrapper returning only field list.
+ */
 STATIC FUNCTION op_list_fields( hArgs )
    LOCAL hInfo := op_get_table_info( hArgs )
    RETURN hInfo[ "fields" ]
 
 
+/*
+ * op_list_indexes - Worker op: open table read-only and describe index keys.
+ */
 STATIC FUNCTION op_list_indexes( hArgs )
    LOCAL cPath := resolve_dbf( hb_HGetDef( hArgs, "table", "" ) )
    LOCAL aIdx := discover_indexes( cPath )
@@ -588,6 +645,9 @@ STATIC FUNCTION op_list_indexes( hArgs )
    RETURN aOut
 
 
+/*
+ * op_open_table - Worker op: open/make-active table and optional index set.
+ */
 STATIC FUNCTION op_open_table( hArgs )
    LOCAL cTable := hb_HGetDef( hArgs, "table", "" )
    LOCAL aIdx := hb_HGetDef( hArgs, "indexes", NIL )
@@ -620,11 +680,17 @@ STATIC FUNCTION op_open_table( hArgs )
    RETURN session_summary( hSession )
 
 
+/*
+ * op_get_active_table - Worker op: return active session summary.
+ */
 STATIC FUNCTION op_get_active_table( hArgs )
    HB_SYMBOL_UNUSED( hArgs )
    RETURN session_summary( active_session() )
 
 
+/*
+ * op_close_active_table - Worker op: close currently active session alias.
+ */
 STATIC FUNCTION op_close_active_table( hArgs )
    LOCAL hSession
    HB_SYMBOL_UNUSED( hArgs )
@@ -635,6 +701,9 @@ STATIC FUNCTION op_close_active_table( hArgs )
    RETURN { "closed" => .T. }
 
 
+/*
+ * op_close_table - Worker op: close one specific open table session.
+ */
 STATIC FUNCTION op_close_table( hArgs )
    LOCAL cTable := hb_HGetDef( hArgs, "table", "" )
    LOCAL cPath := resolve_dbf( cTable )
@@ -652,6 +721,9 @@ STATIC FUNCTION op_close_table( hArgs )
    RETURN { "closed" => .T., "table" => cPath }
 
 
+/*
+ * op_close_all_tables - Worker op: close every open table in current process.
+ */
 STATIC FUNCTION op_close_all_tables( hArgs )
    LOCAL nCount := Len( s_hSessions )
    HB_SYMBOL_UNUSED( hArgs )
@@ -659,6 +731,9 @@ STATIC FUNCTION op_close_all_tables( hArgs )
    RETURN { "closed" => .T., "count" => nCount }
 
 
+/*
+ * op_set_order - Worker op: set active order by numeric slot or index name.
+ */
 STATIC FUNCTION op_set_order( hArgs )
    LOCAL hSession := session_for( hb_HGetDef( hArgs, "table", NIL ) )
    LOCAL xOrder := hb_HGetDef( hArgs, "order", 0 )
@@ -674,6 +749,9 @@ STATIC FUNCTION op_set_order( hArgs )
       "active_index_key" => AllTrim( ( cAlias )->( OrdKey( ( cAlias )->( OrdNumber( ( cAlias )->( OrdSetFocus() ) ) ) ) ) ) }
 
 
+/*
+ * op_set_deleted - Worker op: toggle visibility of deleted records per session.
+ */
 STATIC FUNCTION op_set_deleted( hArgs )
    LOCAL hSession := session_for( hb_HGetDef( hArgs, "table", NIL ) )
    LOCAL lFlag := hb_HGetDef( hArgs, "flag", .F. )
@@ -688,6 +766,9 @@ STATIC FUNCTION op_set_deleted( hArgs )
       "deleted_visible" => hSession[ "deleted_visible" ] }
 
 
+/*
+ * op_get_deleted - Worker op: report deleted-record visibility flag.
+ */
 STATIC FUNCTION op_get_deleted( hArgs )
    LOCAL hSession := session_for( hb_HGetDef( hArgs, "table", NIL ) )
    RETURN { ;
@@ -695,6 +776,9 @@ STATIC FUNCTION op_get_deleted( hArgs )
       "deleted_visible" => hSession[ "deleted_visible" ] }
 
 
+/*
+ * op_current_record - Worker op: return current row without cursor movement.
+ */
 STATIC FUNCTION op_current_record( hArgs )
    LOCAL hSession := session_for( hb_HGetDef( hArgs, "table", NIL ) )
    LOCAL cAlias := hSession[ "alias" ]
@@ -704,6 +788,9 @@ STATIC FUNCTION op_current_record( hArgs )
       "state"  => session_summary( hSession ) }
 
 
+/*
+ * op_get_record - Worker op: position by physical recno and return row/state.
+ */
 STATIC FUNCTION op_get_record( hArgs )
    LOCAL hSession := session_for( hb_HGetDef( hArgs, "table", NIL ) )
    LOCAL nRecno := hb_HGetDef( hArgs, "recno", 0 )
@@ -716,6 +803,9 @@ STATIC FUNCTION op_get_record( hArgs )
    RETURN { "record" => dbf_IsoValue( hRec ), "state" => session_summary( hSession ) }
 
 
+/*
+ * op_go_top - Worker op: move cursor to first row (order-aware) and return it.
+ */
 STATIC FUNCTION op_go_top( hArgs )
    LOCAL hSession := session_for( hb_HGetDef( hArgs, "table", NIL ) )
    LOCAL cAlias := hSession[ "alias" ]
@@ -724,6 +814,9 @@ STATIC FUNCTION op_go_top( hArgs )
    RETURN { "record" => dbf_IsoValue( current_record( cAlias ) ), "state" => session_summary( hSession ) }
 
 
+/*
+ * op_go_bottom - Worker op: move cursor to last row (order-aware) and return it.
+ */
 STATIC FUNCTION op_go_bottom( hArgs )
    LOCAL hSession := session_for( hb_HGetDef( hArgs, "table", NIL ) )
    LOCAL cAlias := hSession[ "alias" ]
@@ -732,6 +825,9 @@ STATIC FUNCTION op_go_bottom( hArgs )
    RETURN { "record" => dbf_IsoValue( current_record( cAlias ) ), "state" => session_summary( hSession ) }
 
 
+/*
+ * op_skip - Worker op: move cursor by N rows and return resulting row/state.
+ */
 STATIC FUNCTION op_skip( hArgs )
    LOCAL hSession := session_for( hb_HGetDef( hArgs, "table", NIL ) )
    LOCAL nN := hb_HGetDef( hArgs, "n", 1 )
@@ -741,6 +837,9 @@ STATIC FUNCTION op_skip( hArgs )
    RETURN { "record" => dbf_IsoValue( current_record( cAlias ) ), "state" => session_summary( hSession ) }
 
 
+/*
+ * op_seek_record - Worker op: DBSEEK current order and return found + row.
+ */
 STATIC FUNCTION op_seek_record( hArgs )
    LOCAL hSession := session_for( hb_HGetDef( hArgs, "table", NIL ) )
    LOCAL xValue := dbf_ParseDate( hb_HGetDef( hArgs, "value", NIL ) )
@@ -757,6 +856,9 @@ STATIC FUNCTION op_seek_record( hArgs )
       "state"  => session_summary( hSession ) }
 
 
+/*
+ * op_records_since - Worker op: soft-seek and stream rows forward to EOF.
+ */
 STATIC FUNCTION op_records_since( hArgs )
    LOCAL hSession := session_for( hb_HGetDef( hArgs, "table", NIL ) )
    LOCAL xValue := dbf_ParseDate( hb_HGetDef( hArgs, "value", NIL ) )
@@ -774,6 +876,9 @@ STATIC FUNCTION op_records_since( hArgs )
    RETURN { "count" => Len( aRecs ), "records" => aRecs, "state" => session_summary( hSession ) }
 
 
+/*
+ * op_query_records - Worker op: scan/query rows with projection, filters, seek.
+ */
 STATIC FUNCTION op_query_records( hArgs )
    LOCAL hSession := session_for( hb_HGetDef( hArgs, "table", NIL ) )
    LOCAL nLimit := hb_HGetDef( hArgs, "limit", 50 )
@@ -786,6 +891,13 @@ STATIC FUNCTION op_query_records( hArgs )
    LOCAL aRecs := {}, nSeen := 0, lSeekUsed := .F.
    LOCAL aEqFilters, aRemaining, hSeekFlt, nSeekOrder, xSeekValue, cSeekField
    LOCAL hRec, xFieldVal
+   LOCAL cFilterErr := ""
+
+   aFilters := dbf_NormalizeFilters( aFilters, @cFilterErr )
+   IF ! Empty( cFilterErr )
+      RETURN { "error" => "Invalid filters: " + cFilterErr + ;
+         ". Use object filters {field,op,value} or string filters like EST_COD = 11" }
+   ENDIF
 
    IF xIncludeDeleted != NIL
       hSession[ "deleted_visible" ] := xIncludeDeleted
@@ -873,6 +985,9 @@ STATIC FUNCTION op_query_records( hArgs )
       "seek_used" => lSeekUsed }
 
 
+/*
+ * find_index_order - Return index order number whose key_expr matches field.
+ */
 STATIC FUNCTION find_index_order( hSession, cField )
    LOCAL aMeta := hSession[ "index_meta" ]
    LOCAL hMeta
@@ -884,6 +999,9 @@ STATIC FUNCTION find_index_order( hSession, cField )
    RETURN NIL
 
 
+/*
+ * remove_filter - Return a shallow-cloned array excluding one filter hash.
+ */
 STATIC FUNCTION remove_filter( aFilters, hSkip )
    LOCAL aOut := {}, h
    FOR EACH h IN aFilters
@@ -894,6 +1012,243 @@ STATIC FUNCTION remove_filter( aFilters, hSkip )
    RETURN aOut
 
 
+/*
+ * dbf_NormalizeFilters - Canonicalize every accepted filters input shape.
+ *
+ * Why this exists:
+ *   MCP clients and agent frameworks do not always emit the same argument
+ *   shape for filters. Some send structured objects (`field/op/value`),
+ *   others send SQL-like single-line expressions. This helper converts all
+ *   supported forms to one internal representation so op_query_records()
+ *   can keep a single matching path and avoid runtime type errors.
+ *
+ * Accepted inputs:
+ *   NIL                -> NIL (no filtering)
+ *   string             -> { { field, op, value } }
+ *   hash               -> { { field, op, value } }
+ *   array (mixed)      -> { { ... }, { ... }, ... }
+ *
+ * Returns:
+ *   Array of normalized filter hashes, or NIL when parsing/validation fails.
+ *   cErr receives a human-readable explanation when the return is NIL.
+ */
+STATIC FUNCTION dbf_NormalizeFilters( xFilters, cErr )
+   LOCAL aOut := {}
+   LOCAL xItem, hParsed
+
+   cErr := ""
+   IF xFilters == NIL
+      RETURN NIL
+   ENDIF
+
+   IF HB_ISSTRING( xFilters )
+      hParsed := dbf_ParseFilterExpr( xFilters, @cErr )
+      IF ! Empty( cErr )
+         RETURN NIL
+      ENDIF
+      AAdd( aOut, hParsed )
+      RETURN aOut
+   ENDIF
+
+   IF HB_ISHASH( xFilters )
+      hParsed := dbf_NormalizeFilterHash( xFilters, @cErr )
+      IF ! Empty( cErr )
+         RETURN NIL
+      ENDIF
+      AAdd( aOut, hParsed )
+      RETURN aOut
+   ENDIF
+
+   IF ! HB_ISARRAY( xFilters )
+      cErr := "filters must be a string, object, or array"
+      RETURN NIL
+   ENDIF
+
+   FOR EACH xItem IN xFilters
+      IF HB_ISSTRING( xItem )
+         hParsed := dbf_ParseFilterExpr( xItem, @cErr )
+      ELSEIF HB_ISHASH( xItem )
+         hParsed := dbf_NormalizeFilterHash( xItem, @cErr )
+      ELSE
+         cErr := "array items must be string expressions or filter objects"
+      ENDIF
+      IF ! Empty( cErr )
+         RETURN NIL
+      ENDIF
+      AAdd( aOut, hParsed )
+   NEXT
+
+   RETURN aOut
+
+
+/*
+ * dbf_NormalizeFilterHash - Validate object-form filters from clients.
+ *
+ * Input contract:
+ *   { "field" => <non-empty string>, "op" => <known operator>, "value" => <any> }
+ *
+ * Design note:
+ *   We validate operators here (instead of deep in dbf_Match) so bad client
+ *   payloads fail early with a deterministic, user-facing message.
+ */
+STATIC FUNCTION dbf_NormalizeFilterHash( hFilter, cErr )
+   LOCAL cField := AllTrim( hb_CStr( hb_HGetDef( hFilter, "field", "" ) ) )
+   LOCAL cOp := Lower( AllTrim( hb_CStr( hb_HGetDef( hFilter, "op", "eq" ) ) ) )
+   LOCAL aAllowed
+
+   cErr := ""
+   IF Empty( cField )
+      cErr := "filter object is missing non-empty field"
+      RETURN NIL
+   ENDIF
+
+   aAllowed := { "eq", "ne", "lt", "lte", "gt", "gte", "contains", "startswith", "endswith", "in", "between" }
+   IF AScan( aAllowed, cOp ) == 0
+      cErr := "unsupported object operator '" + cOp + "'"
+      RETURN NIL
+   ENDIF
+
+   RETURN { ;
+      "field" => cField, ;
+      "op"    => cOp, ;
+      "value" => hb_HGetDef( hFilter, "value", NIL ) }
+
+
+/*
+ * dbf_ParseFilterExpr - Parse a simple textual filter into object form.
+ *
+ * Supported grammar (v1):
+ *   FIELD OP VALUE
+ * where OP is one of: =, !=, <, <=, >, >=
+ *
+ * Not supported in v1:
+ *   AND / OR / parentheses / function calls.
+ *
+ * Why this exists:
+ *   Some MCP clients prefer compact text arguments. Converting the text to
+ *   canonical `{ field, op, value }` keeps the rest of the pipeline identical
+ *   to object-based filters and preserves deterministic behavior.
+ */
+STATIC FUNCTION dbf_ParseFilterExpr( cExpr, cErr )
+   LOCAL cText := AllTrim( cExpr )
+   LOCAL aOps := { "<=", ">=", "!=", "=", "<", ">" }
+   LOCAL aMap := { "lte", "gte", "ne", "eq", "lt", "gt" }
+   LOCAL i, nPos := 0, cOpToken := "", cField, cValueText, xValue
+
+   cErr := ""
+   IF Empty( cText )
+      cErr := "empty string filter"
+      RETURN NIL
+   ENDIF
+
+   FOR i := 1 TO Len( aOps )
+      nPos := At( aOps[ i ], cText )
+      IF nPos > 0
+         cOpToken := aOps[ i ]
+         EXIT
+      ENDIF
+   NEXT
+   IF Empty( cOpToken )
+      cErr := "string filter must use one of: =, !=, <, <=, >, >="
+      RETURN NIL
+   ENDIF
+
+   cField := AllTrim( Left( cText, nPos - 1 ) )
+   cValueText := AllTrim( SubStr( cText, nPos + Len( cOpToken ) ) )
+   IF Empty( cField ) .OR. Empty( cValueText )
+      cErr := "string filter must follow FIELD OP VALUE"
+      RETURN NIL
+   ENDIF
+
+   xValue := dbf_ParseFilterValue( cValueText )
+   RETURN { ;
+      "field" => cField, ;
+      "op"    => aMap[ i ], ;
+      "value" => xValue }
+
+
+/*
+ * dbf_ParseFilterValue - Coerce textual VALUE tokens into Harbour scalars.
+ *
+ * Coercion rules:
+ *   - quoted text ("..." or '...') -> string without quotes
+ *   - true/.T. and false/.F.       -> logical
+ *   - numeric literal              -> numeric
+ *   - otherwise                    -> raw string
+ *
+ * Date literals remain strings here; dbf_ParseDate() is applied later by the
+ * matching layer so both object-form and string-form filters share the same
+ * date semantics.
+ */
+STATIC FUNCTION dbf_ParseFilterValue( cText )
+   LOCAL cVal := AllTrim( cText )
+   LOCAL cFirst := "", cLast := ""
+
+   IF Empty( cVal )
+      RETURN ""
+   ENDIF
+
+   cFirst := Left( cVal, 1 )
+   cLast  := Right( cVal, 1 )
+   IF ( cFirst == "'" .AND. cLast == "'" ) .OR. ( cFirst == '"' .AND. cLast == '"' )
+      RETURN SubStr( cVal, 2, Len( cVal ) - 2 )
+   ENDIF
+
+   IF Lower( cVal ) == ".t." .OR. Lower( cVal ) == "true"
+      RETURN .T.
+   ENDIF
+   IF Lower( cVal ) == ".f." .OR. Lower( cVal ) == "false"
+      RETURN .F.
+   ENDIF
+
+   IF dbf_IsNumericLiteral( cVal )
+      RETURN Val( cVal )
+   ENDIF
+
+   RETURN cVal
+
+
+/*
+ * dbf_IsNumericLiteral - Lightweight numeric token validator.
+ *
+ * Accepts optional leading sign and at most one decimal point.
+ * Rejects any other character to avoid accidental coercion of IDs or mixed
+ * tokens that should stay as strings.
+ */
+STATIC FUNCTION dbf_IsNumericLiteral( cText )
+   LOCAL cVal := AllTrim( cText )
+   LOCAL nDots := 0, nStart := 1, i, c
+
+   IF Empty( cVal )
+      RETURN .F.
+   ENDIF
+
+   c := Left( cVal, 1 )
+   IF c == "+" .OR. c == "-"
+      IF Len( cVal ) == 1
+         RETURN .F.
+      ENDIF
+      nStart := 2
+   ENDIF
+
+   FOR i := nStart TO Len( cVal )
+      c := SubStr( cVal, i, 1 )
+      IF c == "."
+         nDots++
+         IF nDots > 1
+            RETURN .F.
+         ENDIF
+      ELSEIF !( c >= "0" .AND. c <= "9" )
+         RETURN .F.
+      ENDIF
+   NEXT
+
+   RETURN .T.
+
+
+/*
+ * apply_session_state - Reapply process-wide SET DELETED from session flag.
+ */
 STATIC PROCEDURE apply_session_state( hSession )
    /* Re-apply per-session SET DELETED before each op (it is process-wide
       in Harbour, so a previous tool call on another session may have

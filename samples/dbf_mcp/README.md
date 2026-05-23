@@ -83,6 +83,20 @@ Ops: `eq, ne, lt, lte, gt, gte, contains, startswith, endswith, in, between`.
 `between` value: `{ "min": ..., "max": ... }`. Dates accept `YYYY-MM-DD`
 or `YYYYMMDD`.
 
+## Filters for LLM agents
+
+`query_records.filters` accepts:
+
+- Object format: `[{"field":"EST_COD","op":"eq","value":"11"}]`
+- String format: `"EST_COD = '11'"` or `["EST_COD = '11'"]`
+- Mixed array: `["EST_GRUPO = '13'", {"field":"EST_SUB","op":"eq","value":"03"}]`
+
+String operators: `=`, `!=`, `<`, `<=`, `>`, `>=`.
+
+Object operators: `eq, ne, lt, lte, gt, gte, contains, startswith, endswith, in, between`.
+
+String filter syntax (v1) does not support `AND`, `OR`, or parentheses.
+
 ## Encoding
 
 DBF character fields are read in the configured `encoding` (default
@@ -111,4 +125,3 @@ exactly 25 entries.
 - Errors raised in the worker (missing table, bad seek value, etc.) are
   returned to the caller as `{ "error": "..." }` hashes inside the tool
   result payload, not as JSON-RPC error objects.
-

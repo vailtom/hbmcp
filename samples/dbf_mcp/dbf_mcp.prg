@@ -256,7 +256,7 @@ STATIC PROCEDURE dbf_RegisterTools()
 
    MCPRegisterTool( ;
       "query_records", ;
-      "Query records with optional filters and field projection. Single eq filter on indexed field auto-uses seek.", ;
+      "Query records with optional filters and field projection. filters supports object format ({field,op,value}) and string format (FIELD OP VALUE). String operators: =, !=, <, <=, >, >=. Object operators: eq, ne, lt, lte, gt, gte, contains, startswith, endswith, in, between. Single eq filter on indexed field auto-uses seek.", ;
       { ;
          "type"       => "object", ;
          "properties" => { ;
@@ -265,7 +265,7 @@ STATIC PROCEDURE dbf_RegisterTools()
             "offset"          => { "type" => "integer", "default" => 0 }, ;
             "order"           => { "description" => "Integer or string index name" }, ;
             "include_deleted" => { "type" => "boolean" }, ;
-            "filters"         => { "type" => "array" }, ;
+            "filters"         => { "description" => "String, object, or array (mixed) of filters. Examples: EST_COD = 11; [{field:EST_COD,op:eq,value:11}]; [EST_GRUPO = 13,{field:EST_SUB,op:eq,value:03}]" }, ;
             "fields"          => { "type" => "array", "items" => { "type" => "string" } } }, ;
          "required"   => {} }, ;
       {| hArgs | dbf_Dispatch( "query_records", hArgs ) } )
