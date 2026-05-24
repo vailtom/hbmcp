@@ -1,5 +1,19 @@
 # hbmcp - Harbour MCP Server
 
+```text
+   _     _     __  __  ____  ____
+  | |__ | |__ |  \/  |/ ___||  _ \
+  | '_ \| '_ \| |\/| | |    | |_) |
+  | | | | |_) | |  | | |___ |  __/
+  |_| |_|_.__/|_|  |_|\____||_|
+  Harbour's Reference Implementation 
+                      for MCP.
+```
+
+[![Watch the demo](https://img.youtube.com/vi/WWVnEWFp_mU/maxresdefault.jpg)](https://youtu.be/WWVnEWFp_mU)
+
+**Watch the demo:** https://youtu.be/WWVnEWFp_mU
+
 Pure-Harbour library that turns any Harbour application into
 an **MCP server** (Model Context Protocol), exposing tools to LLM clients
 such as Claude Desktop, MCP Inspector, MCP-aware IDEs, etc.
